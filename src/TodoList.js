@@ -1,43 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Form, Button, ListGroup, Row, Col } from 'react-bootstrap';
-import axios from 'axios';
+import { fetchTasks, addTask, deleteTask, updateTask } from './todoFunctions';
 
 function TodoList() {
   const [tasks, setTasks] = useState([]);
   const [taskInput, setTaskInput] = useState('');
+  const [editIndex, setEditIndex] = useState(null);
+  const [editValue, setEditValue] = useState('');
 
   useEffect(() => {
-    axios.get('http://localhost:3001/tasks')
-      .then(response => {
-        setTasks(response.data);
-      })
-      .catch(error => {
-        console.error('Error fetching tasks:', error);
-      });
+    fetchTasks()
+      .then(data => setTasks(data))
+      .catch(error => console.error('Error fetching tasks:', error));
   }, []);
 
   const handleAddTask = () => {
     if (taskInput.trim() !== '') {
-      axios.post('http://localhost:3001/tasks', { task: taskInput })
-        .then(response => {
-          setTasks([...tasks, response.data]);
+      addTask(taskInput)
+        .then(data => {
+          setTasks([...tasks, data]);
           setTaskInput('');
         })
-        .catch(error => {
-          console.error('Error adding task:', error);
-        });
+        .catch(error => console.error('Error adding task:', error));
     }
   };
 
-  const handleDeleteTask = index => {
-    axios.delete(`http://localhost:3001/tasks/${tasks[index].id}`)
+  const handleDeleteTask = (taskId, index) => {
+    deleteTask(taskId)
       .then(() => {
         const updatedTasks = tasks.filter((_, i) => i !== index);
         setTasks(updatedTasks);
       })
-      .catch(error => {
-        console.error('Error deleting task:', error);
-      });
+      .catch(error => console.error('Error deleting task:', error));
+  };
+
+  const handleEditTask = (taskId, index, newValue) => {
+    updateTask(taskId, newValue)
+      .then(() => {
+        const updatedTasks = [...tasks];
+        updatedTasks[index].task = newValue;
+        setTasks(updatedTasks);
+        setEditIndex(null);
+      })
+      .catch(error => console.error('Error updating task:', error));
+  };
+
+  const handleConfirmEdit = (taskId, index) => {
+    handleEditTask(taskId, index, editValue);
   };
 
   return (
@@ -65,29 +74,46 @@ function TodoList() {
       <ListGroup>
         {tasks.map((task, index) => (
           <ListGroup.Item key={index}>
-            {task.task}
-            <Button
-              className="float-end"
-              variant="danger"
-              onClick={() => handleDeleteTask(index)}
-              style={{ marginRight: '5px' }}
-            >
-              Sil
-            </Button>
-            <Button
-              className="float-end"
-              variant="warning"
-              onClick={() => alert('Görev Güncellendi!')}
-            >
-              Güncelle
-            </Button>
-            <Button
-              className="float-end"
-              variant="success"
-              onClick={() => alert('Görev Tamamlandı!')}
-            >
-              Tamamlandı
-            </Button>
+            {index === editIndex ? (
+              <>
+                <Form.Control
+                  type="text"
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                />
+                <Button
+                  className="float-end mt-2"
+                  variant="success"
+                  onClick={() => handleConfirmEdit(task.id, index)}
+                  style={{ marginRight: '5px' }}
+                >
+                  Onayla
+                </Button>
+              </>
+            ) : (
+              <>
+                {task.task}
+                <Button
+                  className="float-end"
+                  variant="danger"
+                  onClick={() => handleDeleteTask(task.id, index)}
+                  style={{ marginRight: '5px' }}
+                >
+                  Sil
+                </Button>
+                <Button
+                  className="float-end"
+                  variant="warning"
+                  onClick={() => {
+                    setEditIndex(index);
+                    setEditValue(task.task);
+                  }}
+                  style={{ marginRight: '5px' }}
+                >
+                  Düzenle
+                </Button>
+              </>
+            )}
           </ListGroup.Item>
         ))}
       </ListGroup>
