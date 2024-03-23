@@ -1,8 +1,14 @@
 {
   "tasks": [
     {
-      "id": "d00f",
-      "task": "deneme artık"
+      "id": "96c5",
+      "task": {
+        "id": "96c5",
+        "task": "asd",
+        "date": "2024-03-06",
+        "completed": true
+      },
+      "date": "2024-03-06"
     }
   ]
 }

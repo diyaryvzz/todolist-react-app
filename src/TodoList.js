@@ -7,6 +7,7 @@ function TodoList() {
   const [taskInput, setTaskInput] = useState('');
   const [editIndex, setEditIndex] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
 
   useEffect(() => {
     fetchTasks()
@@ -16,7 +17,7 @@ function TodoList() {
 
   const handleAddTask = () => {
     if (taskInput.trim() !== '') {
-      addTask(taskInput)
+      addTask(taskInput, selectedDate)
         .then(data => {
           setTasks([...tasks, data]);
           setTaskInput('');
@@ -48,13 +49,26 @@ function TodoList() {
   const handleConfirmEdit = (taskId, index) => {
     handleEditTask(taskId, index, editValue);
   };
-
+  
+  const handleCompleteTask = async (taskId, index) => {
+    const updatedTasks = [...tasks];
+    updatedTasks[index].completed = true;
+    setTasks(updatedTasks);
+    
+    try {
+      await updateTask(taskId, { ...tasks[index], completed: true });
+      console.log('Task completed successfully');
+    } catch (error) {
+      console.error('Error completing task:', error);
+    }
+  };
+  
   return (
     <Container>
       <h1 className="mt-5 mb-3">Görev Listesi</h1>
       <Form className="mb-3">
         <Row>
-          <Col sm={8}>
+          <Col sm={6}>
             <Form.Group controlId="formTask">
               <Form.Control
                 type="text"
@@ -64,7 +78,16 @@ function TodoList() {
               />
             </Form.Group>
           </Col>
-          <Col sm={4}>
+          <Col sm={3}>
+            <Form.Group controlId="formDate">
+              <Form.Control
+                type="date"
+                value={selectedDate}
+                onChange={e => setSelectedDate(e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+          <Col sm={3}>
             <Button variant="primary" className='mt-2' onClick={handleAddTask} block>
               Ekle
             </Button>
@@ -74,46 +97,44 @@ function TodoList() {
       <ListGroup>
         {tasks.map((task, index) => (
           <ListGroup.Item key={index}>
-            {index === editIndex ? (
-              <>
-                <Form.Control
-                  type="text"
-                  value={editValue}
-                  onChange={e => setEditValue(e.target.value)}
-                />
-                <Button
-                  className="float-end mt-2"
-                  variant="success"
-                  onClick={() => handleConfirmEdit(task.id, index)}
-                  style={{ marginRight: '5px' }}
-                >
-                  Onayla
-                </Button>
-              </>
-            ) : (
-              <>
-                {task.task}
-                <Button
-                  className="float-end"
-                  variant="danger"
-                  onClick={() => handleDeleteTask(task.id, index)}
-                  style={{ marginRight: '5px' }}
-                >
-                  Sil
-                </Button>
-                <Button
-                  className="float-end"
-                  variant="warning"
-                  onClick={() => {
-                    setEditIndex(index);
-                    setEditValue(task.task);
-                  }}
-                  style={{ marginRight: '5px' }}
-                >
-                  Düzenle
-                </Button>
-              </>
-            )}
+            <>
+              {task.completed ? (
+                <del>{task.task} - {new Date(task.date).toLocaleDateString()}</del>
+              ) : (
+                <>{task.task} - {new Date(task.date).toLocaleDateString()}</>
+              )}
+              {!task.completed && (
+                <>
+                  <Button
+                    className="float-end"
+                    variant="danger"
+                    onClick={() => handleDeleteTask(task.id, index)}
+                    style={{ marginRight: '5px' }}
+                  >
+                    Sil
+                  </Button>
+                  <Button
+                    className="float-end"
+                    variant="warning"
+                    onClick={() => {
+                      setEditIndex(index);
+                      setEditValue(task.task);
+                    }}
+                    style={{ marginRight: '5px' }}
+                  >
+                    Düzenle
+                  </Button>
+                  <Button
+                    className="float-end"
+                    variant="success"
+                    onClick={() => handleCompleteTask(task.id, index)}
+                    style={{ marginRight: '5px' }}
+                  >
+                    Tamamlandı
+                  </Button>
+                </>
+              )}
+            </>
           </ListGroup.Item>
         ))}
       </ListGroup>
